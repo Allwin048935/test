@@ -1,0 +1,41 @@
+from pybit import HTTP
+import time
+
+# Initialize API client
+api_key = 'YOUR_API_KEY'
+api_secret = 'YOUR_API_SECRET'
+client = HTTP("https://api.bybit.com", api_key=api_key, api_secret=api_secret)
+
+# Function to fetch the latest price
+def get_latest_price(symbol):
+    ticker = client.latest_information_for_symbol(symbol=symbol)
+    return float(ticker['result'][0]['last_price'])
+
+# Function to place a buy order with a fixed USDT amount
+def buy_coin_usdt_amount(symbol, usdt_amount):
+    try:
+        # Get the latest price of the coin
+        price = get_latest_price(symbol)
+        
+        # Calculate the quantity to buy
+        qty = usdt_amount / price
+        qty = round(qty, 6)  # Adjust to the exchange's allowed precision
+
+        # Place a market buy order
+        order = client.place_active_order(
+            symbol=symbol,
+            side="Buy",
+            order_type="Market",
+            qty=qty,
+            time_in_force="GoodTillCancel"
+        )
+
+        print("Order placed successfully:", order)
+    except Exception as e:
+        print("Error placing order:", e)
+
+# Example usage
+symbol = "BTCUSDT"   # Replace with your symbol
+usdt_amount = 10      # Amount in USDT
+
+buy_coin_usdt_amount(symbol, usdt_amount)
