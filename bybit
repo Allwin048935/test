@@ -2,8 +2,8 @@ from pybit import HTTP
 import time
 
 # Initialize API client
-api_key = 'YOUR_API_KEY'
-api_secret = 'YOUR_API_SECRET'
+api_key = 'jcTIZOTsd1OsUOpgER'
+api_secret = 'IlBRdxegRqhkWFyHWs2K9omWXTuCDyLEx7a6'
 client = HTTP("https://api.bybit.com", api_key=api_key, api_secret=api_secret)
 
 # Function to fetch the latest price
