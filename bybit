@@ -1,15 +1,23 @@
-from pybit import HTTP
+import requests
 import time
+import hashlib
+import hmac
 
-# Initialize API client
+# Bybit API credentials
 api_key = 'jcTIZOTsd1OsUOpgER'
 api_secret = 'IlBRdxegRqhkWFyHWs2K9omWXTuCDyLEx7a6'
-client = HTTP("https://api.bybit.com", api_key=api_key, api_secret=api_secret)
 
-# Function to fetch the latest price
+# Function to generate authentication signature
+def generate_signature(api_secret, params):
+    query_string = '&'.join([f"{key}={params[key]}" for key in sorted(params.keys())])
+    return hmac.new(api_secret.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
+
+# Function to get the latest price
 def get_latest_price(symbol):
-    ticker = client.latest_information_for_symbol(symbol=symbol)
-    return float(ticker['result'][0]['last_price'])
+    url = f"https://api.bybit.com/v2/public/tickers?symbol={symbol}"
+    response = requests.get(url)
+    data = response.json()
+    return float(data['result'][0]['last_price'])
 
 # Function to place a buy order with a fixed USDT amount
 def buy_coin_usdt_amount(symbol, usdt_amount):
@@ -21,16 +29,29 @@ def buy_coin_usdt_amount(symbol, usdt_amount):
         qty = usdt_amount / price
         qty = round(qty, 6)  # Adjust to the exchange's allowed precision
 
-        # Place a market buy order
-        order = client.place_active_order(
-            symbol=symbol,
-            side="Buy",
-            order_type="Market",
-            qty=qty,
-            time_in_force="GoodTillCancel"
-        )
+        # Set up order parameters
+        endpoint = "https://api.bybit.com/v2/private/order/create"
+        params = {
+            'api_key': api_key,
+            'symbol': symbol,
+            'side': 'Buy',
+            'order_type': 'Market',
+            'qty': qty,
+            'time_in_force': 'GoodTillCancel',
+            'timestamp': int(time.time() * 1000)
+        }
 
-        print("Order placed successfully:", order)
+        # Generate signature and add it to the parameters
+        params['sign'] = generate_signature(api_secret, params)
+
+        # Send POST request to create order
+        response = requests.post(endpoint, data=params)
+        data = response.json()
+        
+        if data["ret_code"] == 0:
+            print("Order placed successfully:", data)
+        else:
+            print("Failed to place order:", data["ret_msg"])
     except Exception as e:
         print("Error placing order:", e)
 
